@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Overflow.AppHost", "Overflo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Overflow.ServiceDefaults", "Overflow.ServiceDefaults\Overflow.ServiceDefaults.csproj", "{48745F98-20B9-43B5-910E-3EFFF1E5720D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{77481DD8-CCCD-44F1-9215-73E592893CBB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuestionService", "QuestionService\QuestionService.csproj", "{FEF53C50-0D4F-4AA9-901C-05BBD155A40D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,12 @@ Global
 		{48745F98-20B9-43B5-910E-3EFFF1E5720D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48745F98-20B9-43B5-910E-3EFFF1E5720D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48745F98-20B9-43B5-910E-3EFFF1E5720D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEF53C50-0D4F-4AA9-901C-05BBD155A40D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEF53C50-0D4F-4AA9-901C-05BBD155A40D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEF53C50-0D4F-4AA9-901C-05BBD155A40D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEF53C50-0D4F-4AA9-901C-05BBD155A40D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FEF53C50-0D4F-4AA9-901C-05BBD155A40D} = {77481DD8-CCCD-44F1-9215-73E592893CBB}
 	EndGlobalSection
 EndGlobal
