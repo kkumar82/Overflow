@@ -34,8 +34,8 @@ namespace QuestionService.Data.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("character varying(36)");
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -50,13 +50,13 @@ namespace QuestionService.Data.Migrations
 
                     b.Property<string>("UserDisplayName")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
 
                     b.HasKey("Id");
 

@@ -1,8 +1,18 @@
+using Microsoft.Extensions.Hosting;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-var keycloak = builder.AddKeycloak("keycloak", 6001)
-    .WithDataVolume("keycloak-data");
+var compose = builder.AddDockerComposeEnvironment("production")
+    .WithDashboard(dashboard => dashboard.WithHostPort(8080));
 
+var keycloak = builder.AddKeycloak("keycloak", 6001)
+    .WithDataVolume("keycloak-data")
+    .WithRealmImport("../infra/realms")
+    .WithEnvironment("KC_HTTP_ENABLED", "true")
+    .WithEnvironment("KC_HOSTNAME_STRICT", "false")
+    //.WithEndpoint(6001, 8080, "keycloak", isExternal: true)
+    .WithEnvironment("VIRTUAL_HOST", "id.overflow.local")
+    .WithEnvironment("VIRTUAL_PORT", "8080");
 
 var postgres = builder.AddPostgres("postgres", port: 5432)
     .WithDataVolume("p-data")
@@ -10,15 +20,20 @@ var postgres = builder.AddPostgres("postgres", port: 5432)
 
 
 /* external projects above this line, individual projects below */
-var typesenseApiKey = builder.AddParameter("typesense-api-key", secret: true);
 
+//var typesenseApiKey = builder.AddParameter("typesense-api-key", secret: true);
+var typesenseApiKey = builder.Environment.IsDevelopment()
+    ? builder.Configuration["Parameters:typesense-api-key"] ??
+      throw new InvalidOperationException("Could not get typesense api key")
+    : "${TYPESENSE_API_KEY}";
+    
 var typesense = builder.AddContainer("typesense", "typesense/typesense", "29.0")
     .WithArgs("--data-dir", "/data", "--api-key", typesenseApiKey, "--enable-cors")
     .WithVolume("typesense-data", "/data")
+    .WithEnvironment("TYPESENSE_API_KEY", typesenseApiKey) //new line added for chapter 50
     .WithHttpEndpoint(8108, 8108, name: "typesense");
 
 var typesenseContainer = typesense.GetEndpoint("typesense");
-
 
 var questionDb  = postgres.AddDatabase( "questionDb");
 
@@ -40,5 +55,25 @@ var searchService = builder.AddProject<Projects.SearchService>("search-svc")
     .WithReference(rabbitmq)
     .WaitFor(typesense)
     .WaitFor(rabbitmq);
+
+var yarp = builder.AddYarp("gateway")
+    .WithConfiguration(yarpBuilder =>
+    {
+        yarpBuilder.AddRoute("/questions/{**catch-all}", questionService);
+        yarpBuilder.AddRoute("/tags/{**catch-all}", questionService);
+        yarpBuilder.AddRoute("/search/{**catch-all}", searchService);
+    }) // I use 51734 shown on gateway dashboard instead of 8001 otherwise get "socket hang up" issue on postman
+    .WithEnvironment("ASPNETCORE_URLS", "http://*:8001")
+    .WithEndpoint(port: 8001, scheme: "http", targetPort: 8001, name: "gateway", isExternal: true)
+    .WithEnvironment("VIRTUAL_HOST", "api.overflow.local")
+    .WithEnvironment("VIRTUAL_PORT", "8001");
+
+
+if (!builder.Environment.IsDevelopment())
+{
+    builder.AddContainer("nginx-proxy", "nginxproxy/nginx-proxy", "1.8")
+        .WithEndpoint(80, 80, "nginx", isExternal: true)
+        .WithBindMount("/var/run/docker.sock", "/tmp/docker.sock", true);
+}
 
 builder.Build().Run();

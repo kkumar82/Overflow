@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace QuestionService.Models;
 
@@ -7,11 +7,11 @@ public class Answer
 {
     [MaxLength(36)]
     public string Id { get; set; } = Guid.NewGuid().ToString();
-    [MaxLength(36)]
+    [MaxLength(5000)]
     public string Content { get; set; }
-    [MaxLength(50)]
+    [MaxLength(36)]
     public string UserId { get; set; }
-    [MaxLength(1000)]
+    [MaxLength(300)]
     public string UserDisplayName { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

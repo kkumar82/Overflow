@@ -1,8 +1,13 @@
+using System.Net.Sockets;
+using Common;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Polly;
 using QuestionService.Data;
 using QuestionService.Services;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 using Wolverine;
 using Wolverine.RabbitMQ;
 
@@ -16,26 +21,56 @@ builder.AddServiceDefaults();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TagService>();
 
-builder.Services.AddAuthentication().AddKeycloakJwtBearer(serviceName: "keycloak", realm: "overflow", options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.Audience = "overflow";
-});
+// builder.Services.AddAuthentication().AddKeycloakJwtBearer(serviceName: "keycloak", realm: "overflow", options =>
+// {
+//     options.RequireHttpsMetadata = false;
+//     options.Audience = "overflow";
+// });
+builder.Services.AddKeycloalAuthentication();
 
 builder.AddNpgsqlDbContext<QuestionDbContext>("questionDb");
 
-builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
+// builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
+// {
+//     traceProviderBuilder.SetResourceBuilder(ResourceBuilder.CreateDefault()
+//             .AddService(builder.Environment.ApplicationName))
+//         .AddSource("Wolverine");
+// });
+
+// var retryPolicy = Policy
+//     .Handle<BrokerUnreachableException>()
+//     .Or<SocketException>()
+//     .WaitAndRetryAsync(
+//         retryCount: 5,
+//         retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+//         (exception, timeSpan, retryCount) =>
+//         {
+//             Console.WriteLine($" Retry attempt {retryCount} failed. Retrying in ${timeSpan.Seconds} seconds...");
+//         });
+//
+// await retryPolicy.ExecuteAsync(async () =>
+// {
+//     var endPoint = builder.Configuration.GetConnectionString("messaging")
+//         ?? throw new InvalidOperationException("messaging  connection string not found");
+//     var factory = new ConnectionFactory
+//     {
+//         Uri = new Uri(endPoint)
+//     };
+//     await using var connection = await factory.CreateConnectionAsync();
+// });
+
+// builder.Host.UseWolverine(opts =>
+// {
+//     opts.UseRabbitMqUsingNamedConnection("messaging").AutoProvision();
+//     opts.PublishAllMessages().ToRabbitExchange("questions");
+// });
+await builder.UseWolverineWithRabbitMqAsync(opts =>
 {
-    traceProviderBuilder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-            .AddService(builder.Environment.ApplicationName))
-        .AddSource("Wolverine");
+    opts.PublishAllMessages().ToRabbitExchange("questions");
+    opts.ApplicationAssembly = typeof(Program).Assembly; // where to look for wolverine handlers
 });
 
-builder.Host.UseWolverine(opts =>
-{
-    opts.UseRabbitMqUsingNamedConnection("messaging").AutoProvision();
-    opts.PublishAllMessages().ToRabbitExchange("questions");
-});
+
 
 var app = builder.Build();
 

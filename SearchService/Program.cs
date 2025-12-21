@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Common;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using SearchService.Data;
@@ -14,20 +15,28 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.AddServiceDefaults();
 
-builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
-{
-    traceProviderBuilder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-            .AddService(builder.Environment.ApplicationName))
-        .AddSource("Wolverine");
-});
+// builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
+// {
+//     traceProviderBuilder.SetResourceBuilder(ResourceBuilder.CreateDefault()
+//             .AddService(builder.Environment.ApplicationName))
+//         .AddSource("Wolverine");
+// });
 
-builder.Host.UseWolverine(opts =>
+// builder.Host.UseWolverine(opts =>
+// {
+//     opts.UseRabbitMqUsingNamedConnection("messaging").AutoProvision();
+//     opts.ListenToRabbitQueue("questions.search", cfg =>
+//     {
+//         cfg.BindExchange("questions");
+//     });
+// });
+await builder.UseWolverineWithRabbitMqAsync(opts =>
 {
-    opts.UseRabbitMqUsingNamedConnection("messaging").AutoProvision();
     opts.ListenToRabbitQueue("questions.search", cfg =>
-    {
-        cfg.BindExchange("questions");
-    });
+     {
+         cfg.BindExchange("questions");
+     });
+    opts.ApplicationAssembly = typeof(Program).Assembly; // where to look for wolverine handlers
 });
 
 //param name is services__typesense__typesense__0 found in envirnomnet variables of Search service
