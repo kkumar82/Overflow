@@ -8,8 +8,9 @@ import AnswersHeader from "@/app/questions/[id]/AnswersHeader";
 type Params = Promise<{id: string}>
 export default async function QuestionDetailedPage({params}: {params: Params}) {
     const {id} = await params;
-    const question = await getQuestionById(id);
+    const {data: question, error} = await getQuestionById(id);
     
+    if (error) throw error;
     if (!question) return notFound();
     
     return (

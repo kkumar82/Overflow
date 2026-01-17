@@ -1,3 +1,5 @@
+#pragma warning restore ASPIRECERTIFICATES001
+
 using Microsoft.Extensions.Hosting;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -5,8 +7,11 @@ var builder = DistributedApplication.CreateBuilder(args);
 var compose = builder.AddDockerComposeEnvironment("production")
     .WithDashboard(dashboard => dashboard.WithHostPort(8080));
 
+#pragma warning disable ASPIRECERTIFICATES001
 var keycloak = builder.AddKeycloak("keycloak", 6001)
     .WithDataVolume("keycloak-data")
+    .WithoutHttpsCertificate()
+#pragma warning restore ASPIRECERTIFICATES001
     .WithRealmImport("../infra/realms")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_HOSTNAME_STRICT", "false")
@@ -56,19 +61,23 @@ var searchService = builder.AddProject<Projects.SearchService>("search-svc")
     .WaitFor(typesense)
     .WaitFor(rabbitmq);
 
+#pragma warning disable ASPIRECERTIFICATES001
 var yarp = builder.AddYarp("gateway")
     .WithConfiguration(yarpBuilder =>
     {
         yarpBuilder.AddRoute("/questions/{**catch-all}", questionService);
+        yarpBuilder.AddRoute("/test/{**catch-all}", questionService);
         yarpBuilder.AddRoute("/tags/{**catch-all}", questionService);
         yarpBuilder.AddRoute("/search/{**catch-all}", searchService);
     }) // I use 51734 shown on gateway dashboard instead of 8001 otherwise get "socket hang up" issue on postman
+    .WithoutHttpsCertificate()
+
     .WithEnvironment("ASPNETCORE_URLS", "http://*:8001")
     .WithEndpoint(port: 8001, scheme: "http", targetPort: 8001, name: "gateway", isExternal: true)
     .WithEnvironment("VIRTUAL_HOST", "api.overflow.local")
     .WithEnvironment("VIRTUAL_PORT", "8001");
 
-var webapp = builder.AddNpmApp("webapp", "../webapp", "dev")
+var webapp = builder.AddJavaScriptApp("webapp", "../webapp")
     .WithReference(keycloak)
     .WithHttpEndpoint(env: "PORT", port: 3000);
 
