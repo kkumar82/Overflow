@@ -1,8 +1,8 @@
 'use client'
 
-import {forwardRef} from "react";
+import {forwardRef} from 'react';
 import Link, {LinkProps} from 'next/link';
 
-export const LinkCompoennt = forwardRef<HTMLAnchorElement, LinkProps>(function LinkCompoent(props, ref) {
-    return <Link ref={ref} {...props} />;    
+export const LinkComponent = forwardRef<HTMLAnchorElement, LinkProps>(function LinkComponent(props, ref) {
+    return <Link suppressHydrationWarning ref={ref} {...props} />;
 });

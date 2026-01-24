@@ -1,5 +1,5 @@
 import {Button} from "@heroui/button";
-import {LinkCompoennt} from "@/components/LinkComponent";
+import {LinkComponent} from "@/components/LinkComponent";
 
 export default function NotFound() {
     return (
@@ -9,7 +9,7 @@ export default function NotFound() {
                 <p className="text-lg text-foreground-500">
                     Sorry, the page you are looking for doesn&#39;t exist.
                 </p>
-                <Button as={LinkCompoennt} href='/' color='primary'>Go Home</Button>
+                <Button as={LinkComponent} href='/' color='primary'>Go Home</Button>
             </div>
         </div>
     );

@@ -16,7 +16,8 @@ public static class AuthExtensions
                 ValidIssuers = [
                     "http://localhost:6001/realms/overflow",
                     "http://keycloak/realms/overflow",
-                    "http://id.overflow.local/realms/overflow"
+                    "http://id.overflow.local/realms/overflow",
+                    "https://id.overflow.local/realms/overflow"
                 ],
                 ClockSkew = TimeSpan.Zero,
             };

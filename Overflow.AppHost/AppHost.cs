@@ -10,7 +10,7 @@ var compose = builder.AddDockerComposeEnvironment("production")
 #pragma warning disable ASPIRECERTIFICATES001
 var keycloak = builder.AddKeycloak("keycloak", 6001)
     .WithDataVolume("keycloak-data")
-    .WithoutHttpsCertificate()
+    //.WithoutHttpsCertificate()
 #pragma warning restore ASPIRECERTIFICATES001
     .WithRealmImport("../infra/realms")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
@@ -26,16 +26,18 @@ var postgres = builder.AddPostgres("postgres", port: 5432)
 
 /* external projects above this line, individual projects below */
 
-//var typesenseApiKey = builder.AddParameter("typesense-api-key", secret: true);
-var typesenseApiKey = builder.Environment.IsDevelopment()
-    ? builder.Configuration["Parameters:typesense-api-key"] ??
-      throw new InvalidOperationException("Could not get typesense api key")
-    : "${TYPESENSE_API_KEY}";
-    
+var typesenseApiKey = builder.AddParameter("typesense-api-key", secret: true);
+// var typesenseApiKey = builder.Environment.IsDevelopment()
+//     ? builder.Configuration["Parameters:typesense-api-key"] ??
+//       throw new InvalidOperationException("Could not get typesense api key")
+//     : "${TYPESENSE_API_KEY}";
+//     
 var typesense = builder.AddContainer("typesense", "typesense/typesense", "29.0")
-    .WithArgs("--data-dir", "/data", "--api-key", typesenseApiKey, "--enable-cors")
+    //.WithArgs("--data-dir", "/data", "--api-key", typesenseApiKey, "--enable-cors")
     .WithVolume("typesense-data", "/data")
     .WithEnvironment("TYPESENSE_API_KEY", typesenseApiKey) //new line added for chapter 50
+    .WithEnvironment("TYPESENSE_DATA_DIR", "/data")
+    .WithEnvironment("TYPESENSE_ENABLE_CORS", "true")
     .WithHttpEndpoint(8108, 8108, name: "typesense");
 
 var typesenseContainer = typesense.GetEndpoint("typesense");
@@ -71,7 +73,6 @@ var yarp = builder.AddYarp("gateway")
         yarpBuilder.AddRoute("/search/{**catch-all}", searchService);
     }) // I use 51734 shown on gateway dashboard instead of 8001 otherwise get "socket hang up" issue on postman
     .WithoutHttpsCertificate()
-
     .WithEnvironment("ASPNETCORE_URLS", "http://*:8001")
     .WithEndpoint(port: 8001, scheme: "http", targetPort: 8001, name: "gateway", isExternal: true)
     .WithEnvironment("VIRTUAL_HOST", "api.overflow.local")
@@ -79,13 +80,21 @@ var yarp = builder.AddYarp("gateway")
 
 var webapp = builder.AddJavaScriptApp("webapp", "../webapp")
     .WithReference(keycloak)
-    .WithHttpEndpoint(env: "PORT", port: 3000);
+    .WithHttpEndpoint(env: "PORT", port: 3000, targetPort: 4000)
+    .WithEnvironment("VIRTUAL_HOST", "app.overflow.local")
+    .WithEnvironment("VIRTUAL_PORT", "4000")
+    .PublishAsDockerFile();
 
 if (!builder.Environment.IsDevelopment())
 {
-    builder.AddContainer("nginx-proxy", "nginxproxy/nginx-proxy", "1.8")
-        .WithEndpoint(80, 80, "nginx", isExternal: true)
-        .WithBindMount("/var/run/docker.sock", "/tmp/docker.sock", true);
+    builder.AddContainer("nginx-proxy", "nginxproxy/nginx-proxy", "1.9")
+        .WithEndpoint(80, 80, name: "nginx", isExternal: true)
+    .WithEndpoint(443, 443, name: "nginx-ssl", isExternal: true)
+    .WithBindMount("/var/run/docker.sock", "/tmp/docker.sock", true)
+    .WithBindMount("../infra/devcerts", "/etc/nginx/certs", true);
+
+     keycloak.WithEnvironment("KC_HOSTNAME", "https://id.overflow.local")
+         .WithEnvironment("KC_HOSTNAME_BACKCHANNEL_DYNAMIC", "true");
 }
 
 builder.Build().Run();
