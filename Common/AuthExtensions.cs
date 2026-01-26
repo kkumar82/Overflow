@@ -5,7 +5,7 @@ namespace Common;
 
 public static class AuthExtensions
 {
-    public static IServiceCollection AddKeycloalAuthentication(this IServiceCollection services)
+    public static IServiceCollection AddKeyCloakAuthentication(this IServiceCollection services)
     {
         services.AddAuthentication().AddKeycloakJwtBearer(serviceName: "keycloak", realm: "overflow", options =>
         {
@@ -22,6 +22,8 @@ public static class AuthExtensions
                 ClockSkew = TimeSpan.Zero,
             };
         });
+        
+        services.AddAuthorizationBuilder();
         
         return services;
     }

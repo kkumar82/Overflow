@@ -26,7 +26,7 @@ builder.Services.AddScoped<TagService>();
 //     options.RequireHttpsMetadata = false;
 //     options.Audience = "overflow";
 // });
-builder.Services.AddKeycloalAuthentication();
+builder.Services.AddKeyCloakAuthentication();
 
 builder.AddNpgsqlDbContext<QuestionDbContext>("questionDb");
 
@@ -66,7 +66,6 @@ builder.AddNpgsqlDbContext<QuestionDbContext>("questionDb");
 // });
 await builder.UseWolverineWithRabbitMqAsync(opts =>
 {
-    opts.PublishAllMessages().ToRabbitExchange("questions");
     opts.ApplicationAssembly = typeof(Program).Assembly; // where to look for wolverine handlers
 });
 

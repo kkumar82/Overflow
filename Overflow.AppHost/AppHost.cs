@@ -10,7 +10,7 @@ var compose = builder.AddDockerComposeEnvironment("production")
 #pragma warning disable ASPIRECERTIFICATES001
 var keycloak = builder.AddKeycloak("keycloak", 6001)
     .WithDataVolume("keycloak-data")
-    //.WithoutHttpsCertificate()
+    .WithoutHttpsCertificate()
 #pragma warning restore ASPIRECERTIFICATES001
     .WithRealmImport("../infra/realms")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
@@ -21,7 +21,8 @@ var keycloak = builder.AddKeycloak("keycloak", 6001)
 
 var postgres = builder.AddPostgres("postgres", port: 5432)
     .WithDataVolume("p-data")
-    .WithPgAdmin();
+    //.WithPgAdmin();
+    .WithPgWeb();
 
 
 /* external projects above this line, individual projects below */
@@ -43,6 +44,7 @@ var typesense = builder.AddContainer("typesense", "typesense/typesense", "29.0")
 var typesenseContainer = typesense.GetEndpoint("typesense");
 
 var questionDb  = postgres.AddDatabase( "questionDb");
+var profileDb = postgres.AddDatabase("profileDb");
 
 var rabbitmq = builder.AddRabbitMQ("messaging")
     .WithDataVolume("r-data")
@@ -54,6 +56,15 @@ var questionService = builder.AddProject<Projects.QuestionService>("question-svc
     .WithReference(rabbitmq)
     .WaitFor(keycloak)
     .WaitFor(questionDb)
+    .WaitFor(rabbitmq);
+
+
+var profileService = builder.AddProject<Projects.ProfileService>("profile-svc")
+    .WithReference(keycloak)
+    .WithReference(profileDb)
+    .WithReference(rabbitmq)
+    .WaitFor(keycloak)
+    .WaitFor(profileDb)
     .WaitFor(rabbitmq);
 
 var searchService = builder.AddProject<Projects.SearchService>("search-svc")
@@ -71,6 +82,7 @@ var yarp = builder.AddYarp("gateway")
         yarpBuilder.AddRoute("/test/{**catch-all}", questionService);
         yarpBuilder.AddRoute("/tags/{**catch-all}", questionService);
         yarpBuilder.AddRoute("/search/{**catch-all}", searchService);
+        yarpBuilder.AddRoute("/profiles/{**catch-all}", profileService);
     }) // I use 51734 shown on gateway dashboard instead of 8001 otherwise get "socket hang up" issue on postman
     .WithoutHttpsCertificate()
     .WithEnvironment("ASPNETCORE_URLS", "http://*:8001")
