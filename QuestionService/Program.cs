@@ -28,19 +28,20 @@ builder.Services.AddKeyCloakAuthentication();
 
 var connString = builder.Configuration.GetConnectionString("questionDb");
 
-builder.Services.AddDbContext<QuestionDbContext>(options =>
-{
-    options.UseNpgsql(connString);
+//builder.AddNpgsqlDbContext<QuestionDbContext>("questionDb");
+ builder.Services.AddDbContext<QuestionDbContext>(options =>
+ {
+     options.UseNpgsql(connString);
 }, optionsLifetime: ServiceLifetime.Singleton);
 
 await builder.UseWolverineWithRabbitMqAsync(opts =>
 {
     opts.ApplicationAssembly = typeof(Program).Assembly;
     opts.PersistMessagesWithPostgresql(connString!);  
-    opts.UseEntityFrameworkCoreTransactions();  
-    opts.PublishMessage<QuestionCreated>().ToRabbitExchange("Contracts.QuestionCreated").UseDurableOutbox();  
-    opts.PublishMessage<QuestionUpdated>().ToRabbitExchange("Contracts.QuestionUpdated").UseDurableOutbox();  
-    opts.PublishMessage<QuestionDeleted>().ToRabbitExchange("Contracts.QuestionDeleted").UseDurableOutbox();
+     opts.UseEntityFrameworkCoreTransactions();  
+     opts.PublishMessage<QuestionCreated>().ToRabbitExchange("Contracts.QuestionCreated").UseDurableOutbox();  
+     opts.PublishMessage<QuestionUpdated>().ToRabbitExchange("Contracts.QuestionUpdated").UseDurableOutbox();  
+     opts.PublishMessage<QuestionDeleted>().ToRabbitExchange("Contracts.QuestionDeleted").UseDurableOutbox();
 });
 
 var app = builder.Build();

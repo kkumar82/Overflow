@@ -1,47 +1,56 @@
-'use client'
+import {getQuestionById} from "@/lib/actions/question-actions";
+import {notFound} from "next/navigation";
+import QuestionDetailedHeader from "@/app/questions/[id]/QuestionDetailedHeader";
+import QuestionContent from "@/app/questions/[id]/QuestionContent";
+import AnswerContent from "@/app/questions/[id]/AnswerContent";
+import AnswersHeader from "@/app/questions/[id]/AnswersHeader";
+import AnswerForm from "@/app/questions/[id]/AnswerForm";
+import {Answer} from "@/lib/types";
 
-import {Select, SelectItem} from "@heroui/select";
-import {usePathname, useRouter, useSearchParams} from "next/navigation";
-import {Key, useMemo} from "react";
+type Params = Promise<{ id: string }>
+type SearchParams = Promise<{sort?: string}>
 
-type Props = {
-    answerCount: number;
-}
+export default async function QuestionDetailed({ params, searchParams }
+                                               : {params: Params, searchParams: SearchParams}) {
+    const { id } = await params;
+    const {sort} = await searchParams;
+    const {data: question, error} = await getQuestionById(id);
 
-export default function AnswersHeader({answerCount}: Props) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+    if (error) throw error;
+    if (!question) return notFound();
 
-    const current = searchParams.get('sort') === 'created' ? 'created' : 'highScore';
-    const selectedKeys = useMemo(() => new Set([current]), [current]);
+    const sortMode = sort === 'created' ? 'created' : 'highScore';
 
-    const handleSort = (key: Key) => {
-        const params = new URLSearchParams(searchParams);
-        if (key === 'highScore') {
-            params.delete('sort');
-        } else {
-            params.set('sort', key.toString());
-        }
-        router.replace(`${pathname}?${params}`, {scroll: false});
+    const sortHighScore = (a: Answer, b: Answer) => {
+        if (a.accepted !== b.accepted) return a.accepted ? -1 : 1;
+        const va = a.votes ?? 0, vb = b.votes ?? 0;
+        if (va !== vb) return vb - va;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
 
+    const sortCreated = (a: Answer, b: Answer) => {
+        return new Date(b.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+
+    const answers = [...question.answers].sort(
+        sortMode === 'created' ? sortCreated : sortHighScore
+    )
+
     return (
-        <div className='flex items-center justify-between pt-3 w-full px-6'>
-            <div className='text-2xl'>{answerCount} {answerCount === 1 ? ' Answer' : ' Answers'}</div>
-            <div className='flex items-center gap-3 justify-end w-[50%] ml-auto'>
-                <Select
-                    aria-label='select sorting'
-                    selectedKeys={selectedKeys}
-                    onSelectionChange={(keys) => {
-                        const [key] = Array.from(keys as Set<string>);
-                        handleSort(key)
-                    }}
-                >
-                    <SelectItem key='highScore'>Highest score (default)</SelectItem>
-                    <SelectItem key='created'>Date created</SelectItem>
-                </Select>
-            </div>
+        <div className='w-full'>
+            <QuestionDetailedHeader question={question} />
+            <QuestionContent question={question} />
+            {question.answers.length > 0 && (
+                <AnswersHeader answerCount={question.answers.length} />
+            )}
+            {answers.map(answer => (
+                <AnswerContent
+                    answer={answer}
+                    key={answer.id}
+                    askerId={question.askerId}
+                />
+            ))}
+            <AnswerForm questionId={question.id} />
         </div>
-    );
+    )
 }
