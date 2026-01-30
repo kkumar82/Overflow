@@ -1,28 +1,27 @@
-'use client';
-
+import React from 'react'
 import {Card, CardBody, CardFooter, CardHeader} from "@heroui/card";
-import Link from "next/link";
 import {Tag} from "@/lib/types";
 import {Chip} from "@heroui/chip";
+import {LinkComponent} from "@/components/LinkComponent";
 
 type Props = {
     tag: Tag;
 }
 
-export default function TagCard({tag}: Props) {
+export default function TagCard({ tag }: Props) {
     return (
-        <Card as={Link} href={`/questions?tag=${tag.slug}`} isHoverable isPressable>
+        <Card as={LinkComponent} href={`/questions?tag=${tag.slug}`} className='card' isHoverable isPressable>
             <CardHeader>
-                <Chip variant="bordered">
+                <Chip variant='bordered'>
                     {tag.slug}
                 </Chip>
             </CardHeader>
             <CardBody>
-                <p className="line-clamp-3">{tag.description}</p>
+                <p className='line-clamp-3'>{tag.description}</p>
             </CardBody>
-            <CardFooter>
-                42 questions
+            <CardFooter className='text-foreground/50'>
+                {tag.usageCount} {tag.usageCount === 1 ? 'question' : 'questions'}
             </CardFooter>
         </Card>
-    );
+    )
 }
