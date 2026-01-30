@@ -1,35 +1,47 @@
-import {getQuestionById} from "@/lib/actions/question-actions";
-import {notFound} from "next/navigation";
-import QuestionDetailedHeader from "@/app/questions/[id]/QuestionDetailedHeader";
-import QuestionContent from "@/app/questions/[id]/QuestionContent";
-import AnswerContent from "@/app/questions/[id]/AnswerContent";
-import AnswersHeader from "@/app/questions/[id]/AnswersHeader";
-import AnswerForm from "@/app/questions/[id]/AnswerForm";
+'use client'
 
-type Params = Promise<{ id: string }>
+import {Select, SelectItem} from "@heroui/select";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
+import {Key, useMemo} from "react";
 
-export default async function QuestionDetailed({ params }: {params: Params}) {
-    const { id } = await params;
-    const {data: question, error} = await getQuestionById(id);
+type Props = {
+    answerCount: number;
+}
 
-    if (error) throw error;
-    if (!question) return notFound();
+export default function AnswersHeader({answerCount}: Props) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    const current = searchParams.get('sort') === 'created' ? 'created' : 'highScore';
+    const selectedKeys = useMemo(() => new Set([current]), [current]);
+
+    const handleSort = (key: Key) => {
+        const params = new URLSearchParams(searchParams);
+        if (key === 'highScore') {
+            params.delete('sort');
+        } else {
+            params.set('sort', key.toString());
+        }
+        router.replace(`${pathname}?${params}`, {scroll: false});
+    }
 
     return (
-        <div className='w-full'>
-            <QuestionDetailedHeader question={question} />
-            <QuestionContent question={question} />
-            {question.answers.length > 0 && (
-                <AnswersHeader answerCount={question.answers.length} />
-            )}
-            {question.answers.map(answer => (
-                <AnswerContent
-                    answer={answer}
-                    key={answer.id}
-                    askerId={question.askerId}
-                />
-            ))}
-            <AnswerForm questionId={question.id} />
+        <div className='flex items-center justify-between pt-3 w-full px-6'>
+            <div className='text-2xl'>{answerCount} {answerCount === 1 ? ' Answer' : ' Answers'}</div>
+            <div className='flex items-center gap-3 justify-end w-[50%] ml-auto'>
+                <Select
+                    aria-label='select sorting'
+                    selectedKeys={selectedKeys}
+                    onSelectionChange={(keys) => {
+                        const [key] = Array.from(keys as Set<string>);
+                        handleSort(key)
+                    }}
+                >
+                    <SelectItem key='highScore'>Highest score (default)</SelectItem>
+                    <SelectItem key='created'>Date created</SelectItem>
+                </Select>
+            </div>
         </div>
-    )
+    );
 }
