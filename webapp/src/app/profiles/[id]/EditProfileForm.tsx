@@ -6,7 +6,7 @@ import {Profile} from "@/lib/types";
 import {useTransition} from "react";
 import {editProfile} from "@/lib/actions/profile-actions";
 import {handleError, successToast} from "@/lib/util";
-import {editProfileSchema, EditProfileSchema} from "@/lib/schemas/editProfileSchema";
+import {EditProfileSchema, editProfileSchema} from "@/lib/schemas/editProfileSchema";
 
 type Props = {
     profile: Profile;

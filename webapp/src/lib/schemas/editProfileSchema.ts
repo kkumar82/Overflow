@@ -8,3 +8,4 @@ export const editProfileSchema = z.object({
     description: required('Description'),
 });
 
+export type EditProfileSchema = z.infer<typeof editProfileSchema>;
